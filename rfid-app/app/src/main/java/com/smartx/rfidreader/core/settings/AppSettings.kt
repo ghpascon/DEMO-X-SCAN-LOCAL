@@ -16,7 +16,9 @@ data class AppSettings(
     val prefixes: List<String> = emptyList(),
     val webhookUrl: String = "",
     /** Último endereço MAC BLE selecionado (global) */
-    val lastBleAddress: String = ""
+    val lastBleAddress: String = "",
+    /** URL base da integração Xtrack (ex: https://demo.smtx.com.br:6100/req) */
+    val xtrackUrl: String = ""
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
@@ -32,6 +34,7 @@ class AppSettingsRepository(context: Context) {
         private val KEY_PREFIXES = stringPreferencesKey("prefixes")
         private val KEY_LAST_BLE = stringPreferencesKey("last_ble_address")
         private val KEY_WEBHOOK = stringPreferencesKey("webhook_url")
+        private val KEY_XTRACK_URL = stringPreferencesKey("xtrack_url")
     }
 
     val flow: Flow<AppSettings> = store.data
@@ -47,7 +50,8 @@ class AppSettingsRepository(context: Context) {
                 prefixes = if (prefixStr.isBlank()) emptyList()
                            else prefixStr.split("|").filter { it.isNotBlank() },
                 webhookUrl = prefs[KEY_WEBHOOK] ?: "",
-                lastBleAddress = prefs[KEY_LAST_BLE] ?: ""
+                lastBleAddress = prefs[KEY_LAST_BLE] ?: "",
+                xtrackUrl = prefs[KEY_XTRACK_URL] ?: ""
             )
         }
 
@@ -59,6 +63,7 @@ class AppSettingsRepository(context: Context) {
             prefs[KEY_PREFIXES] = settings.prefixes.joinToString("|")
             prefs[KEY_WEBHOOK] = settings.webhookUrl
             prefs[KEY_LAST_BLE] = settings.lastBleAddress
+            prefs[KEY_XTRACK_URL] = settings.xtrackUrl
         }
     }
 }

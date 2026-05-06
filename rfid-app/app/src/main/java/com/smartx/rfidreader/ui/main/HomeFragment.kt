@@ -25,6 +25,7 @@ import com.smartx.rfidreader.readers.tsl1128.Tsl1128Reader
 import com.smartx.rfidreader.readers.x714.X714Reader
 import com.smartx.rfidreader.ui.main.reading.ReadingFragment
 import com.smartx.rfidreader.ui.sync.SyncActivity
+import com.smartx.rfidreader.ui.xtrack.XtrackActivity
 import kotlinx.coroutines.launch
 
 class HomeFragment : Fragment() {
@@ -63,6 +64,7 @@ class HomeFragment : Fragment() {
             val connected =
                 viewModel.uiState.value.connectionState == ReaderConnectionState.CONNECTED
             if (connected) {
+                viewModel.clearTags()
                 (requireActivity() as MainActivity).navigateTo(ReadingFragment())
             } else {
                 // Redireciona para o leitor se não estiver conectado
@@ -71,6 +73,9 @@ class HomeFragment : Fragment() {
         }
         binding.cardNavSync.setOnClickListener {
             startActivity(Intent(requireContext(), SyncActivity::class.java))
+        }
+        binding.cardNavXtrack.setOnClickListener {
+            startActivity(Intent(requireContext(), XtrackActivity::class.java))
         }
         binding.cardNavRadar.setOnClickListener {
             val connected =

@@ -30,7 +30,7 @@ class ReadingFragment : Fragment() {
     private var _binding: FragmentReadingBinding? = null
     private val binding get() = _binding!!
     private val viewModel: MainViewModel by activityViewModels()
-    private lateinit var tagAdapter: TagListAdapter
+    private lateinit var tagAdapter: TagGroupAdapter
 
     /** ToneGenerator reutilizado — criado em onStart, liberado em onStop */
     private var toneGenerator: ToneGenerator? = null
@@ -68,13 +68,11 @@ class ReadingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         setupButtons()
-        // Limpa lista de tags ao entrar na tela de leitura
-        viewModel.clearTags()
         observeState()
     }
 
     private fun setupRecyclerView() {
-        tagAdapter = TagListAdapter()
+        tagAdapter = TagGroupAdapter()
         binding.recyclerViewTags.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerViewTags.adapter = tagAdapter
     }
@@ -141,7 +139,7 @@ class ReadingFragment : Fragment() {
                     }
                 }
 
-                // Lista de tags — combina total com limite de exibição
+                // Lista de tags — combina total com limite de exibição, agrupa por descrição
                 var prevTotal = 0
                 launch {
                     combine(viewModel.tags, viewModel.displayLimit) { allTags, limit ->
@@ -150,13 +148,13 @@ class ReadingFragment : Fragment() {
                         val total = allTags.size
                         val visible = if (limit == null) allTags else allTags.take(limit)
 
-                        tagAdapter.submitList(visible)
+                        tagAdapter.submitList(groupTags(visible))
 
                         val suffix = if (limit != null && total > limit) " (${limit})" else ""
                         binding.textTagCount.text = getString(R.string.tag_count, total) + suffix
 
                         // Rola ao topo apenas na primeira tag (lista vazia → 1ª leitura)
-                        if (prevTotal == 0 && total > 0 && visible.isNotEmpty()) {
+                        if (prevTotal == 0 && total > 0) {
                             binding.recyclerViewTags.scrollToPosition(0)
                         }
                         prevTotal = if (total == 0) 0 else total
@@ -214,7 +212,7 @@ class ReadingFragment : Fragment() {
         super.onStop()
         toneGenerator?.release()
         toneGenerator = null
-        viewModel.stopInventoryAndClear()
+        viewModel.stopInventory()
     }
 
     override fun onDestroyView() {

@@ -14,19 +14,20 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
+        <!-- Descrição do objeto (principal — mais importante) -->
         <TextView
-            android:id="@+id/textEpc"
+            android:id="@+id/textDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-            android:fontFamily="monospace"
+            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
             android:textStyle="bold"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             app:layout_constraintEnd_toStartOf="@id/textCount"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Contador de leituras -->
         <TextView
             android:id="@+id/textCount"
             android:layout_width="wrap_content"
@@ -34,10 +35,47 @@
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="?attr/colorPrimary"
             android:layout_marginStart="8dp"
-            app:layout_constraintBaseline_toBaselineOf="@id/textEpc"
+            app:layout_constraintBaseline_toBaselineOf="@id/textDescription"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- EPC (monospace, secundário) -->
+        <TextView
+            android:id="@+id/textEpc"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:fontFamily="monospace"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:layout_marginTop="2dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textDescription" />
+
+        <!-- RSSI -->
+        <TextView
+            android:id="@+id/textRssi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="4dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textEpc" />
+
+        <!-- Horário -->
+        <TextView
+            android:id="@+id/textTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+            android:textColor="?attr/colorOutline"
+            app:layout_constraintBaseline_toBaselineOf="@id/textRssi"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- TID (oculto por padrão) -->
         <TextView
             android:id="@+id/textTid"
             android:layout_width="0dp"
@@ -50,26 +88,7 @@
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textEpc" />
-
-        <TextView
-            android:id="@+id/textRssi"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:layout_marginTop="4dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/textTid" />
-
-        <TextView
-            android:id="@+id/textTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-            android:textColor="?attr/colorOutline"
-            app:layout_constraintBaseline_toBaselineOf="@id/textRssi"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/textRssi" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

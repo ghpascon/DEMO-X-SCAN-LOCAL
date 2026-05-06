@@ -23,6 +23,9 @@ public final class ItemTagBinding implements ViewBinding {
   public final TextView textCount;
 
   @NonNull
+  public final TextView textDescription;
+
+  @NonNull
   public final TextView textEpc;
 
   @NonNull
@@ -35,10 +38,11 @@ public final class ItemTagBinding implements ViewBinding {
   public final TextView textTime;
 
   private ItemTagBinding(@NonNull MaterialCardView rootView, @NonNull TextView textCount,
-      @NonNull TextView textEpc, @NonNull TextView textRssi, @NonNull TextView textTid,
-      @NonNull TextView textTime) {
+      @NonNull TextView textDescription, @NonNull TextView textEpc, @NonNull TextView textRssi,
+      @NonNull TextView textTid, @NonNull TextView textTime) {
     this.rootView = rootView;
     this.textCount = textCount;
+    this.textDescription = textDescription;
     this.textEpc = textEpc;
     this.textRssi = textRssi;
     this.textTid = textTid;
@@ -78,6 +82,12 @@ public final class ItemTagBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.textDescription;
+      TextView textDescription = ViewBindings.findChildViewById(rootView, id);
+      if (textDescription == null) {
+        break missingId;
+      }
+
       id = R.id.textEpc;
       TextView textEpc = ViewBindings.findChildViewById(rootView, id);
       if (textEpc == null) {
@@ -102,8 +112,8 @@ public final class ItemTagBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ItemTagBinding((MaterialCardView) rootView, textCount, textEpc, textRssi, textTid,
-          textTime);
+      return new ItemTagBinding((MaterialCardView) rootView, textCount, textDescription, textEpc,
+          textRssi, textTid, textTime);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

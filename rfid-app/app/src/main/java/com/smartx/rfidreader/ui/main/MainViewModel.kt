@@ -14,6 +14,7 @@ import com.smartx.rfidreader.core.reader.RfidTag
 import com.smartx.rfidreader.core.registry.ReaderRegistry
 import com.smartx.rfidreader.core.settings.AppSettings
 import com.smartx.rfidreader.core.settings.AppSettingsRepository
+import com.smartx.rfidreader.core.xtrack.XtrackRepository
 import com.smartx.rfidreader.readers.x714.X714Reader
 import com.smartx.rfidreader.readers.ih25.IH25Reader
 import com.smartx.rfidreader.readers.tsl1128.Tsl1128Reader
@@ -36,6 +37,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val TAG = "MainViewModel"
     private val settingsRepo = AppSettingsRepository(app)
+    private val xtrackRepo: XtrackRepository = (app as RfidApplication).xtrackRepository
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -281,7 +283,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val existing = _tagMap[tag.epc]
                 val isNew = existing == null
                 if (isNew) {
-                    _tagMap[tag.epc] = tag
+                    // description = null indica "buscando" — será preenchido em background
+                    _tagMap[tag.epc] = tag.copy(description = null)
+                    // Dispara busca no banco Xtrack sem bloquear o fluxo de leitura
+                    viewModelScope.launch {
+                        val obj = xtrackRepo.getObjectByEpc(tag.epc.uppercase())
+                        val desc = obj?.description ?: ""
+                        val current = _tagMap[tag.epc] ?: return@launch
+                        _tagMap[tag.epc] = current.copy(description = desc)
+                        _tagsDirty = true
+                    }
                 } else {
                     _tagMap[tag.epc] = existing!!.copy(
                         readCount = existing.readCount + 1,
@@ -343,12 +354,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _tags.value = emptyList()
     }
 
-    fun stopInventoryAndClear() {
+    fun stopInventory() {
         val r = reader ?: return
         if (r.isInventorying()) {
             r.stopInventory()
             _uiState.update { it.copy(isInventorying = false) }
         }
+    }
+
+    fun stopInventoryAndClear() {
+        stopInventory()
         _tagMap.clear()
         _tagsDirty = false
         _tags.value = emptyList()

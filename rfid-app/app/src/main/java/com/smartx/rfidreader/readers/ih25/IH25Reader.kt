@@ -69,7 +69,7 @@ class IH25Reader : IRfidReader {
                 tidBytes.joinToString("") { "%02X".format(it) }
             } else ""
 
-            val epc = tagData.getEpcHexStr() ?: ""
+            val epc = tagData.getEpcHexStr()?.uppercase() ?: ""
             val rssiStr = tagData.getRssi().toString()
 
             // Only emit tags that include a TID. If TID is missing, attempt a fallback

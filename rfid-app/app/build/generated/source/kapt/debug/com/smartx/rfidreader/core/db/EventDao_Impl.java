@@ -173,7 +173,7 @@ public final class EventDao_Impl implements EventDao {
   }
 
   @Override
-  public Object insert(final EventEntity event, final Continuation<? super Long> $completion) {
+  public Object insert(final EventEntity event, final Continuation<? super Long> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -187,11 +187,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object delete(final EventEntity event, final Continuation<? super Unit> $completion) {
+  public Object delete(final EventEntity event, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -205,11 +205,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object update(final EventEntity event, final Continuation<? super Unit> $completion) {
+  public Object update(final EventEntity event, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -223,11 +223,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteAll(final Continuation<? super Unit> $completion) {
+  public Object deleteAll(final Continuation<? super Unit> arg0) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -246,7 +246,7 @@ public final class EventDao_Impl implements EventDao {
           __preparedStmtOfDeleteAll.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
@@ -349,7 +349,7 @@ public final class EventDao_Impl implements EventDao {
   }
 
   @Override
-  public Object pending(final Continuation<? super List<EventEntity>> $completion) {
+  public Object pending(final Continuation<? super List<EventEntity>> arg0) {
     final String _sql = "SELECT * FROM rfid_events WHERE isSynced = 0 ORDER BY savedAt ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -441,7 +441,7 @@ public final class EventDao_Impl implements EventDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override

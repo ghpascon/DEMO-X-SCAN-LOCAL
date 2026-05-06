@@ -215,12 +215,19 @@
 
         </GridLayout>
 
-        <!-- Card: Modo Radar (largura total) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardNavRadar"
+        <!-- Cards: Modo Radar + Xtrack — lado a lado -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+        <!-- Card: Modo Radar -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardNavRadar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="6dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="2dp"
             app:cardBackgroundColor="?attr/colorErrorContainer">
@@ -228,8 +235,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:padding="20dp">
 
                 <ImageView
@@ -237,31 +243,66 @@
                     android:layout_height="36dp"
                     android:src="@drawable/ic_nav_reader"
                     android:contentDescription="@null"
-                    android:layout_marginEnd="16dp" />
+                    android:layout_marginBottom="12dp" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Modo Radar"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:textColor="?attr/colorOnErrorContainer" />
-                    <TextView
-                        android:id="@+id/textRadarHint"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Localizar tags específicas por RSSI"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnErrorContainer"
-                        android:alpha="0.75" />
-                </LinearLayout>
-
+                    android:text="Modo Radar"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorOnErrorContainer" />
+                <TextView
+                    android:id="@+id/textRadarHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Localizar tags específicas por RSSI"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnErrorContainer"
+                    android:alpha="0.75" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card: Xtrack -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardNavXtrack"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="6dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="?attr/colorTertiaryContainer">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_nav_xtrack"
+                    android:contentDescription="@null"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_xtrack"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorOnTertiaryContainer" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/nav_xtrack_desc"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnTertiaryContainer"
+                    android:alpha="0.75" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
