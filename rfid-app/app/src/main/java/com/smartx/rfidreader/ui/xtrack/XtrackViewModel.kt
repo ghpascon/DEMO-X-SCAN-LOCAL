@@ -23,6 +23,7 @@ data class XtrackUiState(
 
 data class ObjectsState(
     val items: List<XtrackObjectEntity> = emptyList(),
+    val locationNames: Map<String, String> = emptyMap(),
     val page: Int = 0,
     val totalPages: Int = 0,
     val total: Int = 0,
@@ -120,10 +121,12 @@ class XtrackViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _objectsState.update { it.copy(isLoading = true) }
             val (items, total) = xtrackRepo.queryObjectsPaged(filterField, filterValue, page, PAGE_SIZE)
+            val locationNames = xtrackRepo.getAllLocationNames()
             val totalPages = if (total == 0) 0 else ceil(total.toDouble() / PAGE_SIZE).toInt()
             _objectsState.update {
                 it.copy(
                     items = items,
+                    locationNames = locationNames,
                     page = page,
                     totalPages = totalPages,
                     total = total,

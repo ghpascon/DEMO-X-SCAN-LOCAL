@@ -9,6 +9,9 @@ interface XtrackLocationDao {
     @Query("SELECT * FROM xtrack_locations ORDER BY name ASC")
     fun allFlow(): Flow<List<XtrackLocationEntity>>
 
+    @Query("SELECT * FROM xtrack_locations ORDER BY name ASC")
+    suspend fun getAll(): List<XtrackLocationEntity>
+
     @Query("SELECT * FROM xtrack_locations WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): XtrackLocationEntity?
 

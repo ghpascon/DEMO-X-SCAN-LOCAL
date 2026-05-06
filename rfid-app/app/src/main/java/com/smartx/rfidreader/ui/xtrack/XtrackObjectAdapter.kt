@@ -10,15 +10,19 @@ import com.smartx.rfidreader.databinding.ItemXtrackObjectBinding
 
 class XtrackObjectAdapter : ListAdapter<XtrackObjectEntity, XtrackObjectAdapter.ViewHolder>(DiffCallback()) {
 
+    var locationNames: Map<String, String> = emptyMap()
+
     inner class ViewHolder(private val binding: ItemXtrackObjectBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: XtrackObjectEntity) {
             binding.textObjDescription.text = item.description.ifBlank { "—" }
             binding.textObjEpc.text = item.epc
+            val locationName = locationNames[item.locationId]
             binding.textObjLocation.text = when {
-                item.lastLocation.isNotBlank() -> "Localização: ${item.lastLocation}"
-                item.locationId.isNotBlank() -> "ID local: ${item.locationId}"
+                !locationName.isNullOrBlank() -> locationName
+                item.lastLocation.isNotBlank() -> item.lastLocation
+                item.locationId.isNotBlank() -> item.locationId
                 else -> "—"
             }
             binding.textObjActive.text = item.active

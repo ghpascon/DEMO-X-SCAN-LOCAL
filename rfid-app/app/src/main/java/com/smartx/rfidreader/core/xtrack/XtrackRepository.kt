@@ -53,6 +53,11 @@ class XtrackRepository(
     suspend fun getLocationById(id: String): XtrackLocationEntity? =
         withContext(Dispatchers.IO) { locationDao.findById(id) }
 
+    suspend fun getAllLocationNames(): Map<String, String> =
+        withContext(Dispatchers.IO) {
+            locationDao.getAll().associate { it.id to it.name }
+        }
+
     suspend fun objectCount(): Int = withContext(Dispatchers.IO) { objectDao.count() }
     suspend fun locationCount(): Int = withContext(Dispatchers.IO) { locationDao.count() }
 

@@ -65,6 +65,7 @@ class XtrackObjectsBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.objectsState.collect { state ->
+                    adapter.locationNames = state.locationNames
                     adapter.submitList(state.items)
 
                     binding.textObjSheetCount.text = getString(

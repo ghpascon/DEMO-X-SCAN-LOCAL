@@ -212,7 +212,7 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
 
   @Override
   public Object insertAll(final List<XtrackObjectEntity> objects,
-      final Continuation<? super Unit> $completion) {
+      final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -226,11 +226,11 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object insert(final XtrackObjectEntity obj, final Continuation<? super Unit> $completion) {
+  public Object insert(final XtrackObjectEntity obj, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -244,11 +244,11 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object delete(final XtrackObjectEntity obj, final Continuation<? super Unit> $completion) {
+  public Object delete(final XtrackObjectEntity obj, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -262,11 +262,11 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object update(final XtrackObjectEntity obj, final Continuation<? super Unit> $completion) {
+  public Object update(final XtrackObjectEntity obj, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -280,11 +280,11 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteAll(final Continuation<? super Unit> $completion) {
+  public Object deleteAll(final Continuation<? super Unit> arg0) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -303,7 +303,7 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           __preparedStmtOfDeleteAll.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
@@ -413,8 +413,7 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
   }
 
   @Override
-  public Object findByEpc(final String epc,
-      final Continuation<? super XtrackObjectEntity> $completion) {
+  public Object findByEpc(final String epc, final Continuation<? super XtrackObjectEntity> arg1) {
     final String _sql = "SELECT * FROM xtrack_objects WHERE epc = ? COLLATE NOCASE LIMIT 1";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -519,12 +518,12 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
   public Object findByLocation(final String locationId,
-      final Continuation<? super List<XtrackObjectEntity>> $completion) {
+      final Continuation<? super List<XtrackObjectEntity>> arg1) {
     final String _sql = "SELECT * FROM xtrack_objects WHERE locationId = ? ORDER BY description ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -629,11 +628,11 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object count(final Continuation<? super Integer> $completion) {
+  public Object count(final Continuation<? super Integer> arg0) {
     final String _sql = "SELECT COUNT(*) FROM xtrack_objects";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -661,12 +660,12 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
   public Object queryPaged(final String filterField, final String filterValue, final int limit,
-      final int offset, final Continuation<? super List<XtrackObjectEntity>> $completion) {
+      final int offset, final Continuation<? super List<XtrackObjectEntity>> arg4) {
     final String _sql = "\n"
             + "        SELECT * FROM xtrack_objects \n"
             + "        WHERE \n"
@@ -852,12 +851,12 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg4);
   }
 
   @Override
   public Object countFiltered(final String filterField, final String filterValue,
-      final Continuation<? super Integer> $completion) {
+      final Continuation<? super Integer> arg2) {
     final String _sql = "\n"
             + "        SELECT COUNT(*) FROM xtrack_objects \n"
             + "        WHERE \n"
@@ -966,7 +965,7 @@ public final class XtrackObjectDao_Impl implements XtrackObjectDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg2);
   }
 
   @NonNull
