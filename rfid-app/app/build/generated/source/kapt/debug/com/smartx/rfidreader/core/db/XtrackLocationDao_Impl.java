@@ -73,7 +73,7 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
 
   @Override
   public Object insertAll(final List<XtrackLocationEntity> locations,
-      final Continuation<? super Unit> $completion) {
+      final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -87,12 +87,11 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object insert(final XtrackLocationEntity location,
-      final Continuation<? super Unit> $completion) {
+  public Object insert(final XtrackLocationEntity location, final Continuation<? super Unit> arg1) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -106,11 +105,11 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           __db.endTransaction();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object deleteAll(final Continuation<? super Unit> $completion) {
+  public Object deleteAll(final Continuation<? super Unit> arg0) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -129,7 +128,7 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           __preparedStmtOfDeleteAll.release(_stmt);
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
@@ -176,7 +175,7 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
   }
 
   @Override
-  public Object getAll(final Continuation<? super List<XtrackLocationEntity>> $completion) {
+  public Object getAll(final Continuation<? super List<XtrackLocationEntity>> arg0) {
     final String _sql = "SELECT * FROM xtrack_locations ORDER BY name ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -212,12 +211,11 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
-  public Object findById(final String id,
-      final Continuation<? super XtrackLocationEntity> $completion) {
+  public Object findById(final String id, final Continuation<? super XtrackLocationEntity> arg1) {
     final String _sql = "SELECT * FROM xtrack_locations WHERE id = ? LIMIT 1";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;
@@ -259,11 +257,11 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @Override
-  public Object count(final Continuation<? super Integer> $completion) {
+  public Object count(final Continuation<? super Integer> arg0) {
     final String _sql = "SELECT COUNT(*) FROM xtrack_locations";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -291,12 +289,12 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg0);
   }
 
   @Override
   public Object searchPaged(final String search, final int limit, final int offset,
-      final Continuation<? super List<XtrackLocationEntity>> $completion) {
+      final Continuation<? super List<XtrackLocationEntity>> arg3) {
     final String _sql = "\n"
             + "        SELECT * FROM xtrack_locations \n"
             + "        WHERE ? = '' OR name LIKE '%' || ? || '%'\n"
@@ -353,11 +351,11 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg3);
   }
 
   @Override
-  public Object countSearch(final String search, final Continuation<? super Integer> $completion) {
+  public Object countSearch(final String search, final Continuation<? super Integer> arg1) {
     final String _sql = "SELECT COUNT(*) FROM xtrack_locations WHERE ? = '' OR name LIKE '%' || ? || '%'";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
     int _argIndex = 1;
@@ -397,7 +395,7 @@ public final class XtrackLocationDao_Impl implements XtrackLocationDao {
           _statement.release();
         }
       }
-    }, $completion);
+    }, arg1);
   }
 
   @NonNull

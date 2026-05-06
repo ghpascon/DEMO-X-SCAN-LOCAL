@@ -11,6 +11,8 @@ import com.smartx.rfidreader.core.reader.IRfidReader
 import com.smartx.rfidreader.core.reader.ReaderConfig
 import com.smartx.rfidreader.core.reader.ReaderConnectionState
 import com.smartx.rfidreader.core.reader.RfidTag
+import com.smartx.rfidreader.core.db.XtrackLocationEntity
+import com.smartx.rfidreader.core.db.XtrackObjectEntity
 import com.smartx.rfidreader.core.registry.ReaderRegistry
 import com.smartx.rfidreader.core.settings.AppSettings
 import com.smartx.rfidreader.core.settings.AppSettingsRepository
@@ -31,6 +33,16 @@ data class MainUiState(
     val configSaveSuccess: Boolean? = null,
     val appSettings: AppSettings = AppSettings(),
     val errorMessage: String? = null
+)
+
+data class LocationInventoryContext(
+    val locationId: String = "",
+    val locationName: String = "",
+    val expectedTags: List<XtrackObjectEntity> = emptyList(),
+    /** ID do EventEntity existente (não sincronizado) para este local, se houver */
+    val existingEventId: Long? = null,
+    /** EPCs já encontrados em uma sessão anterior (retomada) */
+    val preFoundEpcs: Set<String> = emptySet()
 )
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -83,6 +95,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Resultado ao salvar inventário: true = sucesso, false = erro */
     private val _saveInventoryResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
     val saveInventoryResult: SharedFlow<Boolean> = _saveInventoryResult.asSharedFlow()
+
+    /** Estado do inventário de local */
+    private val _locationInventoryContext = MutableStateFlow(LocationInventoryContext())
+    val locationInventoryContext: StateFlow<LocationInventoryContext> = _locationInventoryContext.asStateFlow()
+
+    /** Resultado ao salvar inventário de local */
+    private val _saveLocationInventoryResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    val saveLocationInventoryResult: SharedFlow<Boolean> = _saveLocationInventoryResult.asSharedFlow()
 
     /** Log de conexão — lista acumulada de linhas exibida no ConnectionLogDialogFragment */
     private val _connectionLog = MutableStateFlow<List<String>>(emptyList())
@@ -379,6 +399,88 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val r = reader ?: return
         r.onTriggerReleased()
         _uiState.update { it.copy(isInventorying = r.isInventorying()) }
+    }
+
+    // -------------------------------------------------------------------------
+    // Inventário de Local
+    // -------------------------------------------------------------------------
+
+    fun initLocationInventory(locationId: String, locationName: String) {
+        viewModelScope.launch {
+            val tags = xtrackRepo.getObjectsByLocation(locationId)
+            val app = getApplication<RfidApplication>()
+            val existing = app.eventRepository.findExistingLocationInventory(locationId)
+            val preFoundEpcs: Set<String> = if (existing != null) {
+                try {
+                    val json = org.json.JSONObject(existing.tagsJson)
+                    val arr = json.optJSONArray("found_tags")
+                    if (arr != null) {
+                        (0 until arr.length()).map { arr.getString(it).uppercase() }.toSet()
+                    } else emptySet()
+                } catch (_: Exception) { emptySet() }
+            } else emptySet()
+            _locationInventoryContext.value = LocationInventoryContext(
+                locationId = locationId,
+                locationName = locationName,
+                expectedTags = tags,
+                existingEventId = existing?.id,
+                preFoundEpcs = preFoundEpcs
+            )
+        }
+    }
+
+    fun clearLocationInventory() {
+        _locationInventoryContext.value = LocationInventoryContext()
+    }
+
+    suspend fun getAllLocations(): List<XtrackLocationEntity> =
+        xtrackRepo.getAllLocations()
+
+    fun saveLocationInventory() {
+        val ctx = _locationInventoryContext.value
+        if (ctx.expectedTags.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val app = getApplication<RfidApplication>()
+                val deviceId = Settings.Secure.getString(
+                    app.contentResolver, Settings.Secure.ANDROID_ID
+                ) ?: "unknown"
+                val gps = GpsHelper(app).getLocation()
+                val config = _uiState.value.config
+                val appSettings = _uiState.value.appSettings
+
+                val scannedEpcs = _tagMap.keys.map { it.uppercase() }.toSet()
+                // Combina EPCs da sessão atual com os já encontrados anteriormente
+                val allFoundEpcs = scannedEpcs + ctx.preFoundEpcs
+                val foundEpcs = ctx.expectedTags.filter { it.epc.uppercase() in allFoundEpcs }.map { it.epc }
+                val missingEpcs = ctx.expectedTags.filter { it.epc.uppercase() !in allFoundEpcs }.map { it.epc }
+
+                // Verifica novamente se existe evento pendente (pode ter sido criado em outra sessão)
+                val existingEventId = ctx.existingEventId
+                    ?: app.eventRepository.findExistingLocationInventory(ctx.locationId)?.id
+
+                app.eventRepository.saveLocationInventory(
+                    deviceId = deviceId,
+                    locationId = ctx.locationId,
+                    locationName = ctx.locationName,
+                    total = ctx.expectedTags.size,
+                    foundEpcs = foundEpcs,
+                    missingEpcs = missingEpcs,
+                    gpsLat = gps?.first ?: 0.0,
+                    gpsLng = gps?.second ?: 0.0,
+                    hasGps = gps != null,
+                    txPower = config.txPower,
+                    session = config.session,
+                    rssiFilter = config.rssiFilter,
+                    prefixes = appSettings.prefixes,
+                    existingEventId = existingEventId
+                )
+                _saveLocationInventoryResult.emit(true)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao salvar inventário de local", e)
+                _saveLocationInventoryResult.emit(false)
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

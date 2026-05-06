@@ -27,6 +27,9 @@ public final class FragmentHomeBinding implements ViewBinding {
   public final MaterialCardView cardNavConfig;
 
   @NonNull
+  public final MaterialCardView cardNavLocationInventory;
+
+  @NonNull
   public final MaterialCardView cardNavRadar;
 
   @NonNull
@@ -42,6 +45,9 @@ public final class FragmentHomeBinding implements ViewBinding {
   public final MaterialCardView cardNavXtrack;
 
   @NonNull
+  public final TextView textLocationInventoryHint;
+
+  @NonNull
   public final TextView textRadarHint;
 
   @NonNull
@@ -51,19 +57,22 @@ public final class FragmentHomeBinding implements ViewBinding {
   public final TextView textSyncPending;
 
   private FragmentHomeBinding(@NonNull ScrollView rootView, @NonNull TextView badgePending,
-      @NonNull MaterialCardView cardNavConfig, @NonNull MaterialCardView cardNavRadar,
-      @NonNull MaterialCardView cardNavReader, @NonNull MaterialCardView cardNavReading,
-      @NonNull MaterialCardView cardNavSync, @NonNull MaterialCardView cardNavXtrack,
+      @NonNull MaterialCardView cardNavConfig, @NonNull MaterialCardView cardNavLocationInventory,
+      @NonNull MaterialCardView cardNavRadar, @NonNull MaterialCardView cardNavReader,
+      @NonNull MaterialCardView cardNavReading, @NonNull MaterialCardView cardNavSync,
+      @NonNull MaterialCardView cardNavXtrack, @NonNull TextView textLocationInventoryHint,
       @NonNull TextView textRadarHint, @NonNull TextView textReadingStatusHint,
       @NonNull TextView textSyncPending) {
     this.rootView = rootView;
     this.badgePending = badgePending;
     this.cardNavConfig = cardNavConfig;
+    this.cardNavLocationInventory = cardNavLocationInventory;
     this.cardNavRadar = cardNavRadar;
     this.cardNavReader = cardNavReader;
     this.cardNavReading = cardNavReading;
     this.cardNavSync = cardNavSync;
     this.cardNavXtrack = cardNavXtrack;
+    this.textLocationInventoryHint = textLocationInventoryHint;
     this.textRadarHint = textRadarHint;
     this.textReadingStatusHint = textReadingStatusHint;
     this.textSyncPending = textSyncPending;
@@ -108,6 +117,12 @@ public final class FragmentHomeBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.cardNavLocationInventory;
+      MaterialCardView cardNavLocationInventory = ViewBindings.findChildViewById(rootView, id);
+      if (cardNavLocationInventory == null) {
+        break missingId;
+      }
+
       id = R.id.cardNavRadar;
       MaterialCardView cardNavRadar = ViewBindings.findChildViewById(rootView, id);
       if (cardNavRadar == null) {
@@ -138,6 +153,12 @@ public final class FragmentHomeBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.textLocationInventoryHint;
+      TextView textLocationInventoryHint = ViewBindings.findChildViewById(rootView, id);
+      if (textLocationInventoryHint == null) {
+        break missingId;
+      }
+
       id = R.id.textRadarHint;
       TextView textRadarHint = ViewBindings.findChildViewById(rootView, id);
       if (textRadarHint == null) {
@@ -157,8 +178,9 @@ public final class FragmentHomeBinding implements ViewBinding {
       }
 
       return new FragmentHomeBinding((ScrollView) rootView, badgePending, cardNavConfig,
-          cardNavRadar, cardNavReader, cardNavReading, cardNavSync, cardNavXtrack, textRadarHint,
-          textReadingStatusHint, textSyncPending);
+          cardNavLocationInventory, cardNavRadar, cardNavReader, cardNavReading, cardNavSync,
+          cardNavXtrack, textLocationInventoryHint, textRadarHint, textReadingStatusHint,
+          textSyncPending);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

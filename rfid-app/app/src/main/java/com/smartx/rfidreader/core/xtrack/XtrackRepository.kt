@@ -58,6 +58,12 @@ class XtrackRepository(
             locationDao.getAll().associate { it.id to it.name }
         }
 
+    suspend fun getAllLocations(): List<XtrackLocationEntity> =
+        withContext(Dispatchers.IO) { locationDao.getAll() }
+
+    suspend fun getObjectsByLocation(locationId: String): List<XtrackObjectEntity> =
+        withContext(Dispatchers.IO) { objectDao.findByLocation(locationId) }
+
     suspend fun objectCount(): Int = withContext(Dispatchers.IO) { objectDao.count() }
     suspend fun locationCount(): Int = withContext(Dispatchers.IO) { locationDao.count() }
 
@@ -348,7 +354,8 @@ class XtrackRepository(
                         if (parser.name == "data" && inData) {
                             val epc = fields["IDCODE"]?.trim()?.uppercase() ?: ""
                             val objectId = fields["OBJECT_ID"]?.trim() ?: ""
-                            if (epc.isNotBlank() && objectId.isNotBlank()) {
+                            val type = fields["TYPE"]?.trim()?.uppercase() ?: ""
+                            if (epc.isNotBlank() && objectId.isNotBlank() && type == "RFID") {
                                 result.add(epc to objectId)
                             }
                             inData = false

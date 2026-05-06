@@ -3345,6 +3345,7 @@ id cardFinalResult
 id cardLocationCount
 id cardLog
 id cardNavConfig
+id cardNavLocationInventory
 id cardNavRadar
 id cardNavReader
 id cardNavReading
@@ -3439,6 +3440,7 @@ id editEpc
 id editLocSheetSearch
 id editObjSheetEpc
 id editPrefix
+id editSearchLocation
 id editXtrackConfigUrl
 id edit_query
 id edit_text_id
@@ -3507,6 +3509,7 @@ id immediateStop
 id included
 id indeterminate
 id info
+id infoBar
 id invisible
 id inward
 id is_pooling_container_tag
@@ -3533,6 +3536,7 @@ id line1
 id line3
 id linear
 id listMode
+id listViewLocations
 id list_item
 id m3_side_sheet
 id marquee
@@ -3667,6 +3671,7 @@ id recyclerViewEvents
 id recyclerViewLog
 id recyclerViewProgress
 id recyclerViewReaders
+id recyclerViewRemainingTags
 id recyclerViewScan
 id recyclerViewTags
 id recyclerViewTargets
@@ -3776,11 +3781,16 @@ id textFinalResult
 id textFoundCount
 id textGroupCount
 id textGroupDescription
+id textInventoryCounter
 id textLocId
+id textLocInvDescription
+id textLocInvEpc
 id textLocName
 id textLocSheetCount
 id textLocSheetPageInfo
 id textLocationCount
+id textLocationInventoryHint
+id textLocationName
 id textLog
 id textLogLine
 id textLogTitle
@@ -4014,10 +4024,12 @@ layout design_text_input_start_icon
 layout dialog_ble_scan
 layout dialog_connection_log
 layout dialog_radar_scan
+layout dialog_select_location
 layout dialog_webhook_config
 layout dialog_xtrack_config
 layout fragment_config
 layout fragment_home
+layout fragment_location_inventory
 layout fragment_radar
 layout fragment_reader_selection
 layout fragment_reading
@@ -4026,6 +4038,7 @@ layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
 layout item_ble_device
 layout item_event
+layout item_location_inventory_tag
 layout item_radar_scan_tag
 layout item_radar_target
 layout item_reader
@@ -4264,6 +4277,9 @@ string label_prefix
 string label_rssi_filter
 string label_session
 string label_webhook
+string loc_inv_counter
+string loc_inv_no_locations
+string loc_inv_select_location
 string m3_exceed_max_badge_text_suffix
 string m3_ref_typeface_brand_medium
 string m3_ref_typeface_brand_regular
@@ -4366,6 +4382,8 @@ string mtrl_timepicker_cancel
 string mtrl_timepicker_confirm
 string nav_config
 string nav_config_desc
+string nav_location_inventory
+string nav_location_inventory_desc
 string nav_reader
 string nav_reader_desc
 string nav_reading

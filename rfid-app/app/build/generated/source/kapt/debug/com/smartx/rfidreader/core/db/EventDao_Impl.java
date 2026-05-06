@@ -3,6 +3,7 @@ package com.smartx.rfidreader.core.db;
 import android.database.Cursor;
 import android.os.CancellationSignal;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.CoroutinesRoom;
 import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
@@ -173,7 +174,7 @@ public final class EventDao_Impl implements EventDao {
   }
 
   @Override
-  public Object insert(final EventEntity event, final Continuation<? super Long> arg1) {
+  public Object insert(final EventEntity event, final Continuation<? super Long> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Long>() {
       @Override
       @NonNull
@@ -187,11 +188,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object delete(final EventEntity event, final Continuation<? super Unit> arg1) {
+  public Object delete(final EventEntity event, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -205,11 +206,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object update(final EventEntity event, final Continuation<? super Unit> arg1) {
+  public Object update(final EventEntity event, final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -223,11 +224,11 @@ public final class EventDao_Impl implements EventDao {
           __db.endTransaction();
         }
       }
-    }, arg1);
+    }, $completion);
   }
 
   @Override
-  public Object deleteAll(final Continuation<? super Unit> arg0) {
+  public Object deleteAll(final Continuation<? super Unit> $completion) {
     return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
       @Override
       @NonNull
@@ -246,7 +247,7 @@ public final class EventDao_Impl implements EventDao {
           __preparedStmtOfDeleteAll.release(_stmt);
         }
       }
-    }, arg0);
+    }, $completion);
   }
 
   @Override
@@ -349,7 +350,7 @@ public final class EventDao_Impl implements EventDao {
   }
 
   @Override
-  public Object pending(final Continuation<? super List<EventEntity>> arg0) {
+  public Object pending(final Continuation<? super List<EventEntity>> $completion) {
     final String _sql = "SELECT * FROM rfid_events WHERE isSynced = 0 ORDER BY savedAt ASC";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
@@ -441,7 +442,7 @@ public final class EventDao_Impl implements EventDao {
           _statement.release();
         }
       }
-    }, arg0);
+    }, $completion);
   }
 
   @Override
@@ -512,6 +513,214 @@ public final class EventDao_Impl implements EventDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object findPendingLocationInventory(final String locationId,
+      final Continuation<? super EventEntity> $completion) {
+    final String _sql = "\n"
+            + "        SELECT * FROM rfid_events \n"
+            + "        WHERE eventType = 'location_inventory' \n"
+            + "          AND isSynced = 0\n"
+            + "          AND tagsJson LIKE '%\"location_id\":\"' || ? || '\"%'\n"
+            + "        ORDER BY savedAt DESC \n"
+            + "        LIMIT 1\n"
+            + "    ";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    if (locationId == null) {
+      _statement.bindNull(_argIndex);
+    } else {
+      _statement.bindString(_argIndex, locationId);
+    }
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<EventEntity>() {
+      @Override
+      @Nullable
+      public EventEntity call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfDeviceId = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceId");
+          final int _cursorIndexOfEventType = CursorUtil.getColumnIndexOrThrow(_cursor, "eventType");
+          final int _cursorIndexOfTagsJson = CursorUtil.getColumnIndexOrThrow(_cursor, "tagsJson");
+          final int _cursorIndexOfSavedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "savedAt");
+          final int _cursorIndexOfGpsLat = CursorUtil.getColumnIndexOrThrow(_cursor, "gpsLat");
+          final int _cursorIndexOfGpsLng = CursorUtil.getColumnIndexOrThrow(_cursor, "gpsLng");
+          final int _cursorIndexOfHasGps = CursorUtil.getColumnIndexOrThrow(_cursor, "hasGps");
+          final int _cursorIndexOfTxPower = CursorUtil.getColumnIndexOrThrow(_cursor, "txPower");
+          final int _cursorIndexOfSession = CursorUtil.getColumnIndexOrThrow(_cursor, "session");
+          final int _cursorIndexOfRssiFilter = CursorUtil.getColumnIndexOrThrow(_cursor, "rssiFilter");
+          final int _cursorIndexOfPrefixesJson = CursorUtil.getColumnIndexOrThrow(_cursor, "prefixesJson");
+          final int _cursorIndexOfIsSynced = CursorUtil.getColumnIndexOrThrow(_cursor, "isSynced");
+          final int _cursorIndexOfSyncedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "syncedAt");
+          final EventEntity _result;
+          if (_cursor.moveToFirst()) {
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpDeviceId;
+            if (_cursor.isNull(_cursorIndexOfDeviceId)) {
+              _tmpDeviceId = null;
+            } else {
+              _tmpDeviceId = _cursor.getString(_cursorIndexOfDeviceId);
+            }
+            final String _tmpEventType;
+            if (_cursor.isNull(_cursorIndexOfEventType)) {
+              _tmpEventType = null;
+            } else {
+              _tmpEventType = _cursor.getString(_cursorIndexOfEventType);
+            }
+            final String _tmpTagsJson;
+            if (_cursor.isNull(_cursorIndexOfTagsJson)) {
+              _tmpTagsJson = null;
+            } else {
+              _tmpTagsJson = _cursor.getString(_cursorIndexOfTagsJson);
+            }
+            final String _tmpSavedAt;
+            if (_cursor.isNull(_cursorIndexOfSavedAt)) {
+              _tmpSavedAt = null;
+            } else {
+              _tmpSavedAt = _cursor.getString(_cursorIndexOfSavedAt);
+            }
+            final double _tmpGpsLat;
+            _tmpGpsLat = _cursor.getDouble(_cursorIndexOfGpsLat);
+            final double _tmpGpsLng;
+            _tmpGpsLng = _cursor.getDouble(_cursorIndexOfGpsLng);
+            final boolean _tmpHasGps;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfHasGps);
+            _tmpHasGps = _tmp != 0;
+            final int _tmpTxPower;
+            _tmpTxPower = _cursor.getInt(_cursorIndexOfTxPower);
+            final int _tmpSession;
+            _tmpSession = _cursor.getInt(_cursorIndexOfSession);
+            final int _tmpRssiFilter;
+            _tmpRssiFilter = _cursor.getInt(_cursorIndexOfRssiFilter);
+            final String _tmpPrefixesJson;
+            if (_cursor.isNull(_cursorIndexOfPrefixesJson)) {
+              _tmpPrefixesJson = null;
+            } else {
+              _tmpPrefixesJson = _cursor.getString(_cursorIndexOfPrefixesJson);
+            }
+            final boolean _tmpIsSynced;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsSynced);
+            _tmpIsSynced = _tmp_1 != 0;
+            final String _tmpSyncedAt;
+            if (_cursor.isNull(_cursorIndexOfSyncedAt)) {
+              _tmpSyncedAt = null;
+            } else {
+              _tmpSyncedAt = _cursor.getString(_cursorIndexOfSyncedAt);
+            }
+            _result = new EventEntity(_tmpId,_tmpDeviceId,_tmpEventType,_tmpTagsJson,_tmpSavedAt,_tmpGpsLat,_tmpGpsLng,_tmpHasGps,_tmpTxPower,_tmpSession,_tmpRssiFilter,_tmpPrefixesJson,_tmpIsSynced,_tmpSyncedAt);
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object findById(final long id, final Continuation<? super EventEntity> $completion) {
+    final String _sql = "SELECT * FROM rfid_events WHERE id = ? LIMIT 1";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, id);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<EventEntity>() {
+      @Override
+      @Nullable
+      public EventEntity call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfDeviceId = CursorUtil.getColumnIndexOrThrow(_cursor, "deviceId");
+          final int _cursorIndexOfEventType = CursorUtil.getColumnIndexOrThrow(_cursor, "eventType");
+          final int _cursorIndexOfTagsJson = CursorUtil.getColumnIndexOrThrow(_cursor, "tagsJson");
+          final int _cursorIndexOfSavedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "savedAt");
+          final int _cursorIndexOfGpsLat = CursorUtil.getColumnIndexOrThrow(_cursor, "gpsLat");
+          final int _cursorIndexOfGpsLng = CursorUtil.getColumnIndexOrThrow(_cursor, "gpsLng");
+          final int _cursorIndexOfHasGps = CursorUtil.getColumnIndexOrThrow(_cursor, "hasGps");
+          final int _cursorIndexOfTxPower = CursorUtil.getColumnIndexOrThrow(_cursor, "txPower");
+          final int _cursorIndexOfSession = CursorUtil.getColumnIndexOrThrow(_cursor, "session");
+          final int _cursorIndexOfRssiFilter = CursorUtil.getColumnIndexOrThrow(_cursor, "rssiFilter");
+          final int _cursorIndexOfPrefixesJson = CursorUtil.getColumnIndexOrThrow(_cursor, "prefixesJson");
+          final int _cursorIndexOfIsSynced = CursorUtil.getColumnIndexOrThrow(_cursor, "isSynced");
+          final int _cursorIndexOfSyncedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "syncedAt");
+          final EventEntity _result;
+          if (_cursor.moveToFirst()) {
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpDeviceId;
+            if (_cursor.isNull(_cursorIndexOfDeviceId)) {
+              _tmpDeviceId = null;
+            } else {
+              _tmpDeviceId = _cursor.getString(_cursorIndexOfDeviceId);
+            }
+            final String _tmpEventType;
+            if (_cursor.isNull(_cursorIndexOfEventType)) {
+              _tmpEventType = null;
+            } else {
+              _tmpEventType = _cursor.getString(_cursorIndexOfEventType);
+            }
+            final String _tmpTagsJson;
+            if (_cursor.isNull(_cursorIndexOfTagsJson)) {
+              _tmpTagsJson = null;
+            } else {
+              _tmpTagsJson = _cursor.getString(_cursorIndexOfTagsJson);
+            }
+            final String _tmpSavedAt;
+            if (_cursor.isNull(_cursorIndexOfSavedAt)) {
+              _tmpSavedAt = null;
+            } else {
+              _tmpSavedAt = _cursor.getString(_cursorIndexOfSavedAt);
+            }
+            final double _tmpGpsLat;
+            _tmpGpsLat = _cursor.getDouble(_cursorIndexOfGpsLat);
+            final double _tmpGpsLng;
+            _tmpGpsLng = _cursor.getDouble(_cursorIndexOfGpsLng);
+            final boolean _tmpHasGps;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfHasGps);
+            _tmpHasGps = _tmp != 0;
+            final int _tmpTxPower;
+            _tmpTxPower = _cursor.getInt(_cursorIndexOfTxPower);
+            final int _tmpSession;
+            _tmpSession = _cursor.getInt(_cursorIndexOfSession);
+            final int _tmpRssiFilter;
+            _tmpRssiFilter = _cursor.getInt(_cursorIndexOfRssiFilter);
+            final String _tmpPrefixesJson;
+            if (_cursor.isNull(_cursorIndexOfPrefixesJson)) {
+              _tmpPrefixesJson = null;
+            } else {
+              _tmpPrefixesJson = _cursor.getString(_cursorIndexOfPrefixesJson);
+            }
+            final boolean _tmpIsSynced;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsSynced);
+            _tmpIsSynced = _tmp_1 != 0;
+            final String _tmpSyncedAt;
+            if (_cursor.isNull(_cursorIndexOfSyncedAt)) {
+              _tmpSyncedAt = null;
+            } else {
+              _tmpSyncedAt = _cursor.getString(_cursorIndexOfSyncedAt);
+            }
+            _result = new EventEntity(_tmpId,_tmpDeviceId,_tmpEventType,_tmpTagsJson,_tmpSavedAt,_tmpGpsLat,_tmpGpsLng,_tmpHasGps,_tmpTxPower,_tmpSession,_tmpRssiFilter,_tmpPrefixesJson,_tmpIsSynced,_tmpSyncedAt);
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @NonNull

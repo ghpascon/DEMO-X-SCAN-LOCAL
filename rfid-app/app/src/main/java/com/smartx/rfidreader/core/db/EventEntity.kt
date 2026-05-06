@@ -50,12 +50,22 @@ data class EventEntity(
             put("prefixes", prefixList)
         }
 
-        val eventData = org.json.JSONObject().apply {
-            put("tags", org.json.JSONArray(tagsJson))
-            put("timestamp", savedAt)
-            put("gps", gpsNode)
-            put("reader_config", readerConfig)
+        val eventData = if (eventType == "location_inventory") {
+            // tagsJson contém {total, found, found_tags, missing_tags}
+            org.json.JSONObject(tagsJson).apply {
+                put("timestamp", savedAt)
+                put("gps", gpsNode)
+                put("reader_config", readerConfig)
+            }
+        } else {
+            org.json.JSONObject().apply {
+                put("tags", org.json.JSONArray(tagsJson))
+                put("timestamp", savedAt)
+                put("gps", gpsNode)
+                put("reader_config", readerConfig)
+            }
         }
+
         return org.json.JSONObject().apply {
             put("device_name", deviceId)
             put("event_type", eventType)

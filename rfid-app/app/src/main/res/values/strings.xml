@@ -166,4 +166,11 @@
     <string name="xtrack_empty_objects">Nenhum objeto encontrado.\nBaixe os dados ou ajuste o filtro.</string>
     <string name="xtrack_empty_locations">Nenhuma localização encontrada.\nBaixe os dados ou ajuste a busca.</string>
     <string name="xtrack_filter_epc">Filtrar por EPC</string>
+
+    <!-- Inventário de Local -->
+    <string name="nav_location_inventory">Inventário de Local</string>
+    <string name="nav_location_inventory_desc">Conferir tags por localização</string>
+    <string name="loc_inv_select_location">Selecionar Local</string>
+    <string name="loc_inv_no_locations">Nenhum local disponível. Baixe os dados no Xtrack primeiro.</string>
+    <string name="loc_inv_counter">%1$d / %2$d encontradas</string>
 </resources>

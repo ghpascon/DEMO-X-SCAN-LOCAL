@@ -67,6 +67,73 @@ class EventRepository(private val dao: EventDao) {
         dao.insert(entity)
     }
 
+    suspend fun saveLocationInventory(
+        deviceId: String,
+        locationId: String,
+        locationName: String,
+        total: Int,
+        foundEpcs: List<String>,
+        missingEpcs: List<String>,
+        gpsLat: Double = 0.0,
+        gpsLng: Double = 0.0,
+        hasGps: Boolean = false,
+        txPower: Int = 30,
+        session: Int = 1,
+        rssiFilter: Int = -120,
+        prefixes: List<String> = emptyList(),
+        existingEventId: Long? = null
+    ): Long = withContext(Dispatchers.IO) {
+        val tagsJson = org.json.JSONObject().apply {
+            put("location_id", locationId)
+            put("location_name", locationName)
+            put("total", total)
+            put("found", foundEpcs.size)
+            put("found_tags", JSONArray(foundEpcs))
+            put("missing_tags", JSONArray(missingEpcs))
+        }.toString()
+        val timestamp = isoFormat.format(Date())
+
+        if (existingEventId != null) {
+            val existing = withContext(Dispatchers.IO) { dao.findById(existingEventId) }
+            if (existing != null) {
+                dao.update(
+                    existing.copy(
+                        tagsJson = tagsJson,
+                        savedAt = timestamp,
+                        gpsLat = gpsLat,
+                        gpsLng = gpsLng,
+                        hasGps = hasGps,
+                        txPower = txPower,
+                        session = session,
+                        rssiFilter = rssiFilter,
+                        prefixesJson = prefixes.joinToString("|"),
+                        isSynced = false,
+                        syncedAt = ""
+                    )
+                )
+                return@withContext existingEventId
+            }
+        }
+
+        val entity = EventEntity(
+            deviceId = deviceId,
+            eventType = "location_inventory",
+            tagsJson = tagsJson,
+            savedAt = timestamp,
+            gpsLat = gpsLat,
+            gpsLng = gpsLng,
+            hasGps = hasGps,
+            txPower = txPower,
+            session = session,
+            rssiFilter = rssiFilter,
+            prefixesJson = prefixes.joinToString("|")
+        )
+        dao.insert(entity)
+    }
+
+    suspend fun findExistingLocationInventory(locationId: String): EventEntity? =
+        withContext(Dispatchers.IO) { dao.findPendingLocationInventory(locationId) }
+
     suspend fun deleteEvent(event: EventEntity) = withContext(Dispatchers.IO) {
         dao.delete(event)
     }

@@ -24,6 +24,7 @@ import com.smartx.rfidreader.readers.ih25.IH25Reader
 import com.smartx.rfidreader.readers.tsl1128.Tsl1128Reader
 import com.smartx.rfidreader.readers.x714.X714Reader
 import com.smartx.rfidreader.ui.main.reading.ReadingFragment
+import com.smartx.rfidreader.ui.main.locationinventory.LocationInventoryFragment
 import com.smartx.rfidreader.ui.sync.SyncActivity
 import com.smartx.rfidreader.ui.xtrack.XtrackActivity
 import kotlinx.coroutines.launch
@@ -76,6 +77,15 @@ class HomeFragment : Fragment() {
         }
         binding.cardNavXtrack.setOnClickListener {
             startActivity(Intent(requireContext(), XtrackActivity::class.java))
+        }
+        binding.cardNavLocationInventory.setOnClickListener {
+            val connected =
+                viewModel.uiState.value.connectionState == ReaderConnectionState.CONNECTED
+            if (connected) {
+                (requireActivity() as MainActivity).navigateTo(LocationInventoryFragment())
+            } else {
+                Snackbar.make(binding.root, getString(R.string.error_no_reader), Snackbar.LENGTH_SHORT).show()
+            }
         }
         binding.cardNavRadar.setOnClickListener {
             val connected =
