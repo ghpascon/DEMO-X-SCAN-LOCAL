@@ -2,19 +2,34 @@ package com.smartx.rfidreader.core.xtrack
 
 import android.util.Log
 import android.util.Xml
+import com.smartx.rfidreader.core.db.XtrackEventDao
+import com.smartx.rfidreader.core.db.XtrackEventEntity
 import com.smartx.rfidreader.core.db.XtrackLocationDao
 import com.smartx.rfidreader.core.db.XtrackLocationEntity
 import com.smartx.rfidreader.core.db.XtrackObjectDao
 import com.smartx.rfidreader.core.db.XtrackObjectEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.util.Collections
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser
 import java.io.StringReader
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /**
@@ -25,15 +40,24 @@ import java.util.concurrent.TimeUnit
  */
 class XtrackRepository(
     private val objectDao: XtrackObjectDao,
-    private val locationDao: XtrackLocationDao
+    private val locationDao: XtrackLocationDao,
+    private val xtrackEventDao: XtrackEventDao
 ) {
 
     private val TAG = "XtrackRepository"
 
+    private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+        timeZone = TimeZone.getDefault()
+    }
+
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .dispatcher(okhttp3.Dispatcher().also {
+            it.maxRequests = 32
+            it.maxRequestsPerHost = 16
+        })
         .build()
 
     // -------------------------------------------------------------------------
@@ -42,6 +66,8 @@ class XtrackRepository(
 
     val objectsFlow: Flow<List<XtrackObjectEntity>> = objectDao.allFlow()
     val locationsFlow: Flow<List<XtrackLocationEntity>> = locationDao.allFlow()
+    val xtrackEventsFlow: Flow<List<XtrackEventEntity>> = xtrackEventDao.allFlow()
+    val pendingXtrackCountFlow: Flow<Int> = xtrackEventDao.pendingCountFlow()
 
     // -------------------------------------------------------------------------
     // Lookup local (chamado em background pelo MainViewModel ao ler tag)
@@ -66,6 +92,313 @@ class XtrackRepository(
 
     suspend fun objectCount(): Int = withContext(Dispatchers.IO) { objectDao.count() }
     suspend fun locationCount(): Int = withContext(Dispatchers.IO) { locationDao.count() }
+
+    // -------------------------------------------------------------------------
+    // Eventos Xtrack — persistência
+    // -------------------------------------------------------------------------
+
+    /**
+     * Salva uma movimentação de local (change_location).
+     * tags: lista de Triple(epc, idcode, description)
+     */
+    suspend fun saveChangeLocation(
+        deviceId: String,
+        locationId: String,
+        locationName: String,
+        tags: List<Triple<String, String, String>>
+    ): Long = withContext(Dispatchers.IO) {
+        val arr = JSONArray()
+        tags.forEach { (epc, idcode, description) ->
+            arr.put(JSONObject().apply {
+                put("epc", epc)
+                put("idcode", idcode)
+                put("description", description)
+            })
+        }
+        val entity = XtrackEventEntity(
+            deviceId = deviceId,
+            eventType = "change_location",
+            locationId = locationId,
+            locationName = locationName,
+            tagsJson = arr.toString(),
+            savedAt = isoFormat.format(Date())
+        )
+        xtrackEventDao.insert(entity)
+    }
+
+    /**
+     * Salva (ou atualiza) um inventário de local na tabela de eventos Xtrack.
+     */
+    suspend fun saveXtrackLocationInventory(
+        deviceId: String,
+        locationId: String,
+        locationName: String,
+        total: Int,
+        foundEpcs: List<String>,
+        missingEpcs: List<String>,
+        existingEventId: Long? = null
+    ): Long = withContext(Dispatchers.IO) {
+        val tagsJson = JSONObject().apply {
+            put("location_id", locationId)
+            put("location_name", locationName)
+            put("total", total)
+            put("found", foundEpcs.size)
+            put("found_tags", JSONArray(foundEpcs))
+            put("missing_tags", JSONArray(missingEpcs))
+        }.toString()
+        val timestamp = isoFormat.format(Date())
+
+        if (existingEventId != null) {
+            val existing = xtrackEventDao.findById(existingEventId)
+            if (existing != null) {
+                xtrackEventDao.update(
+                    existing.copy(
+                        tagsJson = tagsJson,
+                        savedAt = timestamp,
+                        isSynced = false,
+                        syncedAt = ""
+                    )
+                )
+                return@withContext existingEventId
+            }
+        }
+
+        xtrackEventDao.insert(
+            XtrackEventEntity(
+                deviceId = deviceId,
+                eventType = "location_inventory",
+                locationId = locationId,
+                locationName = locationName,
+                tagsJson = tagsJson,
+                savedAt = timestamp
+            )
+        )
+    }
+
+    suspend fun findExistingXtrackLocationInventory(locationId: String): XtrackEventEntity? =
+        withContext(Dispatchers.IO) { xtrackEventDao.findPendingLocationInventory(locationId) }
+
+    suspend fun deleteXtrackEvent(event: XtrackEventEntity) =
+        withContext(Dispatchers.IO) { xtrackEventDao.delete(event) }
+
+    suspend fun deleteAllXtrackEvents() =
+        withContext(Dispatchers.IO) { xtrackEventDao.deleteAll() }
+
+    // -------------------------------------------------------------------------
+    // Eventos Xtrack — sincronização
+    // -------------------------------------------------------------------------
+
+    /**
+     * Sincroniza todos os eventos Xtrack pendentes.
+     *  - change_location  → chama MoveLocation no servidor Xtrack (por tag)
+     *  - location_inventory → POST JSON ao webhookUrl
+     * Remove o evento do banco apenas em caso de sucesso.
+     */
+    suspend fun syncXtrackEventsWithProgress(
+        xtrackUrl: String,
+        webhookUrl: String,
+        maxConcurrentCalls: Int = 8,
+        onLog: suspend (String) -> Unit = {},
+        onProgress: suspend (
+            current: Int,
+            total: Int,
+            event: XtrackEventEntity,
+            success: Boolean,
+            error: String?
+        ) -> Unit
+    ): Pair<Int, Int> {
+        val pending = withContext(Dispatchers.IO) { xtrackEventDao.pending() }
+        val total = pending.size
+        if (total == 0) return Pair(0, 0)
+
+        val successCount = AtomicInteger(0)
+        val failCount = AtomicInteger(0)
+        val processedCount = AtomicInteger(0)
+
+        // Semáforo compartilhado limita total de chamadas HTTP simultâneas
+        val semaphore = Semaphore(maxConcurrentCalls)
+
+        onLog("=== ${total} evento(s) pendente(s) · concorrência: $maxConcurrentCalls ===")
+
+        coroutineScope {
+            pending.map { event ->
+                async(Dispatchers.IO) {
+                    val (ok, errMsg) = when (event.eventType) {
+                        "change_location"    -> syncChangeLocationEvent(event, xtrackUrl, semaphore, onLog)
+                        "location_inventory" -> syncLocationInventoryEvent(event, xtrackUrl, webhookUrl, semaphore, onLog)
+                        else -> Pair(false, "Tipo desconhecido: ${event.eventType}")
+                    }
+                    if (ok) {
+                        withContext(Dispatchers.IO) { xtrackEventDao.delete(event) }
+                        successCount.incrementAndGet()
+                    } else {
+                        failCount.incrementAndGet()
+                    }
+                    val current = processedCount.incrementAndGet()
+                    onProgress(current, total, event, ok, errMsg)
+                }
+            }.awaitAll()
+        }
+
+        return Pair(successCount.get(), failCount.get())
+    }
+
+    private suspend fun syncChangeLocationEvent(
+        event: XtrackEventEntity,
+        xtrackUrl: String,
+        semaphore: Semaphore,
+        onLog: suspend (String) -> Unit
+    ): Pair<Boolean, String?> {
+        if (xtrackUrl.isBlank()) return Pair(false, "URL do Xtrack não configurada")
+        return try {
+            val arr = JSONArray(event.tagsJson)
+            val tagCount = arr.length()
+            val tagOkCount = AtomicInteger(0)
+            val tagFailCount = AtomicInteger(0)
+            val errors = Collections.synchronizedList(mutableListOf<String>())
+
+            onLog("▶ Movimentação '${event.locationName}' — $tagCount tag(s) em paralelo")
+
+            coroutineScope {
+                (0 until tagCount).map { i ->
+                    async(Dispatchers.IO) {
+                        val tagObj = arr.getJSONObject(i)
+                        val idcode = tagObj.optString("idcode")
+                        val epc = tagObj.optString("epc")
+                        if (idcode.isBlank()) {
+                            onLog("  [${i + 1}/$tagCount] sem idcode (epc=$epc), ignorado")
+                            return@async
+                        }
+                        val xml = buildMoveLocationXml(idcode, event.locationName)
+                        onLog("  → [${i + 1}/$tagCount] idcode=$idcode")
+                        onLog("    payload: $xml")
+                        semaphore.withPermit {
+                            try {
+                                val response = postXml(xtrackUrl, xml)
+                                onLog("  ✓ [${i + 1}/$tagCount] resposta: $response")
+                                tagOkCount.incrementAndGet()
+                            } catch (e: Exception) {
+                                onLog("  ✗ [${i + 1}/$tagCount] ERRO: ${e.message}")
+                                errors.add("idcode=$idcode: ${e.message}")
+                                tagFailCount.incrementAndGet()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+
+            val ok = tagOkCount.get()
+            val fail = tagFailCount.get()
+            val skipped = tagCount - ok - fail
+            onLog("  Resultado: $ok ✓  $fail ✗${if (skipped > 0) "  $skipped ignorados" else ""}")
+
+            if (fail == 0) Pair(true, null)
+            else Pair(false, errors.firstOrNull() ?: "$fail tag(s) com falha")
+        } catch (e: Exception) {
+            Log.e(TAG, "syncChangeLocationEvent error", e)
+            onLog("  ERRO fatal: ${e.message}")
+            Pair(false, e.message)
+        }
+    }
+
+    private suspend fun syncLocationInventoryEvent(
+        event: XtrackEventEntity,
+        xtrackUrl: String,
+        webhookUrl: String,
+        semaphore: Semaphore,
+        onLog: suspend (String) -> Unit
+    ): Pair<Boolean, String?> {
+        val tagsData = JSONObject(event.tagsJson)
+        val foundEpcs = tagsData.optJSONArray("found_tags")
+            ?.let { arr -> (0 until arr.length()).map { arr.getString(it) } }
+            ?: emptyList()
+
+        onLog("▶ Inventário '${event.locationName}' — ${foundEpcs.size} tag(s) encontrada(s)")
+
+        // ── 1. MoveLocation para cada tag encontrada (paralelo) ──────────────
+        val moveOk = AtomicInteger(0)
+        val moveFail = AtomicInteger(0)
+        val moveErrors = Collections.synchronizedList(mutableListOf<String>())
+
+        if (xtrackUrl.isNotBlank() && foundEpcs.isNotEmpty()) {
+            onLog("  → Chamando MoveLocation para ${foundEpcs.size} tag(s)...")
+            coroutineScope {
+                foundEpcs.mapIndexed { i, epc ->
+                    async(Dispatchers.IO) {
+                        val obj = objectDao.findByEpc(epc)
+                        val idcode = obj?.idcode ?: ""
+                        if (idcode.isBlank()) {
+                            onLog("  [${i + 1}/${foundEpcs.size}] sem idcode (epc=$epc), ignorado")
+                            return@async
+                        }
+                        val xml = buildMoveLocationXml(idcode, event.locationName)
+                        onLog("  → [${i + 1}/${foundEpcs.size}] MoveLocation idcode=$idcode")
+                        semaphore.withPermit {
+                            try {
+                                val response = postXml(xtrackUrl, xml)
+                                onLog("  ✓ [${i + 1}/${foundEpcs.size}] resposta: $response")
+                                moveOk.incrementAndGet()
+                            } catch (e: Exception) {
+                                onLog("  ✗ [${i + 1}/${foundEpcs.size}] ERRO: ${e.message}")
+                                moveErrors.add("idcode=$idcode: ${e.message}")
+                                moveFail.incrementAndGet()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            onLog("  MoveLocation: ${moveOk.get()} ✓  ${moveFail.get()} ✗")
+        } else if (xtrackUrl.isBlank()) {
+            onLog("  (URL Xtrack não configurada — MoveLocation ignorado)")
+        }
+
+        // ── 2. POST JSON ao webhook ───────────────────────────────────────────
+        if (webhookUrl.isBlank()) {
+            onLog("  (URL webhook não configurada — POST ignorado)")
+            // Só falha se ambos estiverem em branco
+            return if (xtrackUrl.isBlank()) Pair(false, "Nenhuma URL configurada")
+            else Pair(moveFail.get() == 0, moveErrors.firstOrNull())
+        }
+        return try {
+            val payload = JSONObject().apply {
+                put("event_type", event.eventType)
+                put("device_id", event.deviceId)
+                put("saved_at", event.savedAt)
+                put("event_data", tagsData)
+            }.toString()
+            onLog("  → POST webhook: $webhookUrl")
+            onLog("  payload: ${JSONObject(payload).toString(2)}")
+            val body = payload.toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url(webhookUrl)
+                .post(body)
+                .header("Content-Type", "application/json")
+                .build()
+            semaphore.withPermit {
+                httpClient.newCall(request).execute().use { response ->
+                    val respBody = response.body?.string() ?: ""
+                    onLog("  resposta HTTP ${response.code}: $respBody")
+                    if (response.isSuccessful) Pair(true, null)
+                    else Pair(false, "HTTP ${response.code}: ${response.message}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "syncLocationInventoryEvent error", e)
+            onLog("  ERRO webhook: ${e.message}")
+            Pair(false, e.message)
+        }
+    }
+
+    private fun buildMoveLocationXml(idcode: String, locationName: String) = """
+        <msg>
+            <command>MoveLocation</command>
+            <terminal>SAPext</terminal>
+            <data>
+                <object>${escapeXml(idcode)}</object>
+                <location>${escapeXml(locationName)}</location>
+            </data>
+        </msg>
+    """.trimIndent()
 
     // -------------------------------------------------------------------------
     // Queries paginadas com filtro

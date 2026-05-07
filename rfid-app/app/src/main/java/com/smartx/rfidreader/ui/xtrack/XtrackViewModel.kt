@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.smartx.rfidreader.RfidApplication
+import com.smartx.rfidreader.core.db.XtrackEventEntity
 import com.smartx.rfidreader.core.db.XtrackLocationEntity
 import com.smartx.rfidreader.core.db.XtrackObjectEntity
 import com.smartx.rfidreader.core.settings.AppSettingsRepository
@@ -16,9 +17,16 @@ private const val PAGE_SIZE = 500
 
 data class XtrackUiState(
     val url: String = "",
+    val webhookUrl: String = "",
     val objectCount: Int = 0,
     val locationCount: Int = 0,
     val isDownloading: Boolean = false
+)
+
+data class XtrackSyncState(
+    val isRunning: Boolean = false,
+    val log: List<String> = emptyList(),
+    val finalMessage: String? = null
 )
 
 data class ObjectsState(
@@ -59,10 +67,21 @@ class XtrackViewModel(app: Application) : AndroidViewModel(app) {
     private val _locationsState = MutableStateFlow(LocationsState())
     val locationsState: StateFlow<LocationsState> = _locationsState.asStateFlow()
 
+    // ─── Eventos Xtrack ──────────────────────────────────────────────────────
+
+    val xtrackEvents: StateFlow<List<XtrackEventEntity>> = xtrackRepo.xtrackEventsFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val pendingXtrackCount: StateFlow<Int> = xtrackRepo.pendingXtrackCountFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    private val _syncState = MutableStateFlow(XtrackSyncState())
+    val syncState: StateFlow<XtrackSyncState> = _syncState.asStateFlow()
+
     init {
         viewModelScope.launch {
             settingsRepo.flow.collect { settings ->
-                _uiState.update { it.copy(url = settings.xtrackUrl) }
+                _uiState.update { it.copy(url = settings.xtrackUrl, webhookUrl = settings.webhookUrl) }
             }
         }
         refreshCounts()
@@ -185,6 +204,58 @@ class XtrackViewModel(app: Application) : AndroidViewModel(app) {
         if (s.page > 0) loadLocationsPage(s.page - 1)
     }
 
+    // ─── Eventos Xtrack \u2014 sync ─────────────────────────────────────────────────
+
+    /**
+     * Sincroniza todos os eventos Xtrack pendentes:
+     *  - change_location   → chama MoveLocation na API Xtrack
+     *  - location_inventory → POST JSON ao webhook URL
+     */
+    fun syncXtrackEvents(onNoUrl: () -> Unit) {
+        if (_syncState.value.isRunning) return
+        val xtrackUrl = _uiState.value.url
+        if (xtrackUrl.isBlank()) { onNoUrl(); return }
+
+        viewModelScope.launch {
+            _syncState.update { XtrackSyncState(isRunning = true) }
+            appendSyncLog("=== Iniciando sincronização de eventos Xtrack ===")
+
+            val (successCount, failCount) = xtrackRepo.syncXtrackEventsWithProgress(
+                xtrackUrl = xtrackUrl,
+                webhookUrl = _uiState.value.webhookUrl,
+                onLog = { msg -> appendSyncLog(msg) }
+            ) { current, total, event, success, error ->
+                val label = event.shortSyncLabel()
+                if (success) {
+                    appendSyncLog("[$current/$total] ✓ $label")
+                } else {
+                    appendSyncLog("[$current/$total] ✗ $label — ${error ?: "erro desconhecido"}")
+                }
+            }
+
+            val msg = when {
+                failCount == 0 && successCount > 0 -> "$successCount enviado(s) com sucesso"
+                failCount > 0 && successCount > 0  -> "$successCount enviado(s), $failCount com erro"
+                failCount > 0 && successCount == 0 -> "Todos os $failCount evento(s) falharam"
+                else -> "Nenhum evento pendente"
+            }
+            appendSyncLog("=== $msg ===")
+            _syncState.update { it.copy(isRunning = false, finalMessage = msg) }
+        }
+    }
+
+    fun deleteXtrackEvent(event: XtrackEventEntity) {
+        viewModelScope.launch { xtrackRepo.deleteXtrackEvent(event) }
+    }
+
+    fun deleteAllXtrackEvents() {
+        viewModelScope.launch { xtrackRepo.deleteAllXtrackEvents() }
+    }
+
+    fun clearSyncState() {
+        _syncState.update { XtrackSyncState() }
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     fun clearLog() { _log.value = emptyList() }
@@ -199,6 +270,22 @@ class XtrackViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun appendLog(msg: String) {
         _log.update { it + msg }
+    }
+
+    private fun appendSyncLog(msg: String) {
+        _syncState.update { it.copy(log = it.log + msg) }
+    }
+}
+
+private fun XtrackEventEntity.shortSyncLabel(): String {
+    val datePart = runCatching {
+        val dt = savedAt.substring(0, 16)
+        "${dt.substring(8, 10)}/${dt.substring(5, 7)} ${dt.substring(11, 16)}"
+    }.getOrElse { savedAt }
+    return when (eventType) {
+        "change_location"    -> "Movimentação $locationName · $tagCount tags · $datePart"
+        "location_inventory" -> "Inventário $locationName · $datePart"
+        else -> "$eventType $datePart"
     }
 }
 

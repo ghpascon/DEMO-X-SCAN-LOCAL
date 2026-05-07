@@ -13,7 +13,7 @@ class RfidApplication : Application() {
     val eventRepository: EventRepository by lazy { EventRepository(database.eventDao()) }
     val settingsRepository: AppSettingsRepository by lazy { AppSettingsRepository(this) }
     val xtrackRepository: XtrackRepository by lazy {
-        XtrackRepository(database.xtrackObjectDao(), database.xtrackLocationDao())
+        XtrackRepository(database.xtrackObjectDao(), database.xtrackLocationDao(), database.xtrackEventDao())
     }
 
     override fun onCreate() {

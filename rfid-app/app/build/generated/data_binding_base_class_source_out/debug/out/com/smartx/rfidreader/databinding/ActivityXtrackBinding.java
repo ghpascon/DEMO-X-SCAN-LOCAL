@@ -25,6 +25,9 @@ public final class ActivityXtrackBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
+  public final MaterialButton btnClearXtrackEvents;
+
+  @NonNull
   public final ImageButton btnCloseLog;
 
   @NonNull
@@ -32,6 +35,9 @@ public final class ActivityXtrackBinding implements ViewBinding {
 
   @NonNull
   public final ImageButton btnOpenConfig;
+
+  @NonNull
+  public final MaterialButton btnSyncXtrackEvents;
 
   @NonNull
   public final MaterialCardView cardLocationCount;
@@ -43,13 +49,25 @@ public final class ActivityXtrackBinding implements ViewBinding {
   public final MaterialCardView cardObjectCount;
 
   @NonNull
+  public final MaterialCardView cardXtrackSyncLog;
+
+  @NonNull
   public final HeaderAppBinding headerApp;
 
   @NonNull
   public final LinearProgressIndicator progressDownload;
 
   @NonNull
+  public final LinearProgressIndicator progressXtrackSync;
+
+  @NonNull
   public final RecyclerView recyclerViewLog;
+
+  @NonNull
+  public final RecyclerView recyclerViewXtrackEvents;
+
+  @NonNull
+  public final RecyclerView recyclerViewXtrackSyncLog;
 
   @NonNull
   public final TextView textLocationCount;
@@ -60,26 +78,41 @@ public final class ActivityXtrackBinding implements ViewBinding {
   @NonNull
   public final TextView textUrlSummary;
 
-  private ActivityXtrackBinding(@NonNull LinearLayout rootView, @NonNull ImageButton btnCloseLog,
+  @NonNull
+  public final TextView textXtrackEventsPending;
+
+  private ActivityXtrackBinding(@NonNull LinearLayout rootView,
+      @NonNull MaterialButton btnClearXtrackEvents, @NonNull ImageButton btnCloseLog,
       @NonNull MaterialButton btnDownloadData, @NonNull ImageButton btnOpenConfig,
-      @NonNull MaterialCardView cardLocationCount, @NonNull MaterialCardView cardLog,
-      @NonNull MaterialCardView cardObjectCount, @NonNull HeaderAppBinding headerApp,
-      @NonNull LinearProgressIndicator progressDownload, @NonNull RecyclerView recyclerViewLog,
-      @NonNull TextView textLocationCount, @NonNull TextView textObjectCount,
-      @NonNull TextView textUrlSummary) {
+      @NonNull MaterialButton btnSyncXtrackEvents, @NonNull MaterialCardView cardLocationCount,
+      @NonNull MaterialCardView cardLog, @NonNull MaterialCardView cardObjectCount,
+      @NonNull MaterialCardView cardXtrackSyncLog, @NonNull HeaderAppBinding headerApp,
+      @NonNull LinearProgressIndicator progressDownload,
+      @NonNull LinearProgressIndicator progressXtrackSync, @NonNull RecyclerView recyclerViewLog,
+      @NonNull RecyclerView recyclerViewXtrackEvents,
+      @NonNull RecyclerView recyclerViewXtrackSyncLog, @NonNull TextView textLocationCount,
+      @NonNull TextView textObjectCount, @NonNull TextView textUrlSummary,
+      @NonNull TextView textXtrackEventsPending) {
     this.rootView = rootView;
+    this.btnClearXtrackEvents = btnClearXtrackEvents;
     this.btnCloseLog = btnCloseLog;
     this.btnDownloadData = btnDownloadData;
     this.btnOpenConfig = btnOpenConfig;
+    this.btnSyncXtrackEvents = btnSyncXtrackEvents;
     this.cardLocationCount = cardLocationCount;
     this.cardLog = cardLog;
     this.cardObjectCount = cardObjectCount;
+    this.cardXtrackSyncLog = cardXtrackSyncLog;
     this.headerApp = headerApp;
     this.progressDownload = progressDownload;
+    this.progressXtrackSync = progressXtrackSync;
     this.recyclerViewLog = recyclerViewLog;
+    this.recyclerViewXtrackEvents = recyclerViewXtrackEvents;
+    this.recyclerViewXtrackSyncLog = recyclerViewXtrackSyncLog;
     this.textLocationCount = textLocationCount;
     this.textObjectCount = textObjectCount;
     this.textUrlSummary = textUrlSummary;
+    this.textXtrackEventsPending = textXtrackEventsPending;
   }
 
   @Override
@@ -109,6 +142,12 @@ public final class ActivityXtrackBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.btnClearXtrackEvents;
+      MaterialButton btnClearXtrackEvents = ViewBindings.findChildViewById(rootView, id);
+      if (btnClearXtrackEvents == null) {
+        break missingId;
+      }
+
       id = R.id.btnCloseLog;
       ImageButton btnCloseLog = ViewBindings.findChildViewById(rootView, id);
       if (btnCloseLog == null) {
@@ -124,6 +163,12 @@ public final class ActivityXtrackBinding implements ViewBinding {
       id = R.id.btnOpenConfig;
       ImageButton btnOpenConfig = ViewBindings.findChildViewById(rootView, id);
       if (btnOpenConfig == null) {
+        break missingId;
+      }
+
+      id = R.id.btnSyncXtrackEvents;
+      MaterialButton btnSyncXtrackEvents = ViewBindings.findChildViewById(rootView, id);
+      if (btnSyncXtrackEvents == null) {
         break missingId;
       }
 
@@ -145,6 +190,12 @@ public final class ActivityXtrackBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.cardXtrackSyncLog;
+      MaterialCardView cardXtrackSyncLog = ViewBindings.findChildViewById(rootView, id);
+      if (cardXtrackSyncLog == null) {
+        break missingId;
+      }
+
       id = R.id.headerApp;
       View headerApp = ViewBindings.findChildViewById(rootView, id);
       if (headerApp == null) {
@@ -158,9 +209,27 @@ public final class ActivityXtrackBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.progressXtrackSync;
+      LinearProgressIndicator progressXtrackSync = ViewBindings.findChildViewById(rootView, id);
+      if (progressXtrackSync == null) {
+        break missingId;
+      }
+
       id = R.id.recyclerViewLog;
       RecyclerView recyclerViewLog = ViewBindings.findChildViewById(rootView, id);
       if (recyclerViewLog == null) {
+        break missingId;
+      }
+
+      id = R.id.recyclerViewXtrackEvents;
+      RecyclerView recyclerViewXtrackEvents = ViewBindings.findChildViewById(rootView, id);
+      if (recyclerViewXtrackEvents == null) {
+        break missingId;
+      }
+
+      id = R.id.recyclerViewXtrackSyncLog;
+      RecyclerView recyclerViewXtrackSyncLog = ViewBindings.findChildViewById(rootView, id);
+      if (recyclerViewXtrackSyncLog == null) {
         break missingId;
       }
 
@@ -182,9 +251,17 @@ public final class ActivityXtrackBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivityXtrackBinding((LinearLayout) rootView, btnCloseLog, btnDownloadData,
-          btnOpenConfig, cardLocationCount, cardLog, cardObjectCount, binding_headerApp,
-          progressDownload, recyclerViewLog, textLocationCount, textObjectCount, textUrlSummary);
+      id = R.id.textXtrackEventsPending;
+      TextView textXtrackEventsPending = ViewBindings.findChildViewById(rootView, id);
+      if (textXtrackEventsPending == null) {
+        break missingId;
+      }
+
+      return new ActivityXtrackBinding((LinearLayout) rootView, btnClearXtrackEvents, btnCloseLog,
+          btnDownloadData, btnOpenConfig, btnSyncXtrackEvents, cardLocationCount, cardLog,
+          cardObjectCount, cardXtrackSyncLog, binding_headerApp, progressDownload,
+          progressXtrackSync, recyclerViewLog, recyclerViewXtrackEvents, recyclerViewXtrackSyncLog,
+          textLocationCount, textObjectCount, textUrlSummary, textXtrackEventsPending);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

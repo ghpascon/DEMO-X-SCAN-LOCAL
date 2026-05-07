@@ -33,10 +33,12 @@ public final class AppDatabase_Impl extends AppDatabase {
 
   private volatile XtrackLocationDao _xtrackLocationDao;
 
+  private volatile XtrackEventDao _xtrackEventDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(5) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `rfid_events` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deviceId` TEXT NOT NULL, `eventType` TEXT NOT NULL, `tagsJson` TEXT NOT NULL, `savedAt` TEXT NOT NULL, `gpsLat` REAL NOT NULL, `gpsLng` REAL NOT NULL, `hasGps` INTEGER NOT NULL, `txPower` INTEGER NOT NULL, `session` INTEGER NOT NULL, `rssiFilter` INTEGER NOT NULL, `prefixesJson` TEXT NOT NULL, `isSynced` INTEGER NOT NULL, `syncedAt` TEXT NOT NULL)");
@@ -47,8 +49,9 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_xtrack_objects_homeLocationId` ON `xtrack_objects` (`homeLocationId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `xtrack_locations` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_xtrack_locations_name` ON `xtrack_locations` (`name`)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `xtrack_events` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deviceId` TEXT NOT NULL, `eventType` TEXT NOT NULL, `locationId` TEXT NOT NULL, `locationName` TEXT NOT NULL, `tagsJson` TEXT NOT NULL, `savedAt` TEXT NOT NULL, `isSynced` INTEGER NOT NULL, `syncedAt` TEXT NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e3c8d641850d1ebb0588f271f45c5280')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '59796a066e1e712eab125c9d27463c71')");
       }
 
       @Override
@@ -56,6 +59,7 @@ public final class AppDatabase_Impl extends AppDatabase {
         db.execSQL("DROP TABLE IF EXISTS `rfid_events`");
         db.execSQL("DROP TABLE IF EXISTS `xtrack_objects`");
         db.execSQL("DROP TABLE IF EXISTS `xtrack_locations`");
+        db.execSQL("DROP TABLE IF EXISTS `xtrack_events`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -161,9 +165,28 @@ public final class AppDatabase_Impl extends AppDatabase {
                   + " Expected:\n" + _infoXtrackLocations + "\n"
                   + " Found:\n" + _existingXtrackLocations);
         }
+        final HashMap<String, TableInfo.Column> _columnsXtrackEvents = new HashMap<String, TableInfo.Column>(9);
+        _columnsXtrackEvents.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("deviceId", new TableInfo.Column("deviceId", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("eventType", new TableInfo.Column("eventType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("locationId", new TableInfo.Column("locationId", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("locationName", new TableInfo.Column("locationName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("tagsJson", new TableInfo.Column("tagsJson", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("savedAt", new TableInfo.Column("savedAt", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("isSynced", new TableInfo.Column("isSynced", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsXtrackEvents.put("syncedAt", new TableInfo.Column("syncedAt", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysXtrackEvents = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesXtrackEvents = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoXtrackEvents = new TableInfo("xtrack_events", _columnsXtrackEvents, _foreignKeysXtrackEvents, _indicesXtrackEvents);
+        final TableInfo _existingXtrackEvents = TableInfo.read(db, "xtrack_events");
+        if (!_infoXtrackEvents.equals(_existingXtrackEvents)) {
+          return new RoomOpenHelper.ValidationResult(false, "xtrack_events(com.smartx.rfidreader.core.db.XtrackEventEntity).\n"
+                  + " Expected:\n" + _infoXtrackEvents + "\n"
+                  + " Found:\n" + _existingXtrackEvents);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "e3c8d641850d1ebb0588f271f45c5280", "513015ffa2c1b38e4018b82f72423d34");
+    }, "59796a066e1e712eab125c9d27463c71", "f858d89eb90ea2d96c42cca47036739e");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -174,7 +197,7 @@ public final class AppDatabase_Impl extends AppDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "rfid_events","xtrack_objects","xtrack_locations");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "rfid_events","xtrack_objects","xtrack_locations","xtrack_events");
   }
 
   @Override
@@ -186,6 +209,7 @@ public final class AppDatabase_Impl extends AppDatabase {
       _db.execSQL("DELETE FROM `rfid_events`");
       _db.execSQL("DELETE FROM `xtrack_objects`");
       _db.execSQL("DELETE FROM `xtrack_locations`");
+      _db.execSQL("DELETE FROM `xtrack_events`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -203,6 +227,7 @@ public final class AppDatabase_Impl extends AppDatabase {
     _typeConvertersMap.put(EventDao.class, EventDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(XtrackObjectDao.class, XtrackObjectDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(XtrackLocationDao.class, XtrackLocationDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(XtrackEventDao.class, XtrackEventDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -259,6 +284,20 @@ public final class AppDatabase_Impl extends AppDatabase {
           _xtrackLocationDao = new XtrackLocationDao_Impl(this);
         }
         return _xtrackLocationDao;
+      }
+    }
+  }
+
+  @Override
+  public XtrackEventDao xtrackEventDao() {
+    if (_xtrackEventDao != null) {
+      return _xtrackEventDao;
+    } else {
+      synchronized(this) {
+        if(_xtrackEventDao == null) {
+          _xtrackEventDao = new XtrackEventDao_Impl(this);
+        }
+        return _xtrackEventDao;
       }
     }
   }

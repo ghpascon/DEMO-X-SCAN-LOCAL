@@ -9,9 +9,10 @@ import androidx.room.RoomDatabase
     entities = [
         EventEntity::class,
         XtrackObjectEntity::class,
-        XtrackLocationEntity::class
+        XtrackLocationEntity::class,
+        XtrackEventEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -19,6 +20,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun xtrackObjectDao(): XtrackObjectDao
     abstract fun xtrackLocationDao(): XtrackLocationDao
+    abstract fun xtrackEventDao(): XtrackEventDao
 
     companion object {
         @Volatile

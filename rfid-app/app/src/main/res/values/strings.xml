@@ -173,4 +173,22 @@
     <string name="loc_inv_select_location">Selecionar Local</string>
     <string name="loc_inv_no_locations">Nenhum local disponível. Baixe os dados no Xtrack primeiro.</string>
     <string name="loc_inv_counter">%1$d / %2$d encontradas</string>
+
+    <!-- Movimentações -->
+    <string name="move_group_not_found">Não encontrados (%d)</string>
+    <string name="nav_move">Movimentações</string>
+    <string name="nav_move_desc">Registrar mudança de local de objetos</string>
+    <string name="move_counter">%d tags registradas</string>
+    <string name="move_saved">Movimentação salva com sucesso</string>
+    <string name="move_save_error">Erro ao salvar movimentação</string>
+    <string name="move_tag_not_found">Não encontrado</string>
+
+    <!-- Tipos de evento Xtrack -->
+    <string name="event_type_move">Movimentação</string>
+    <string name="event_type_inventory">Inventário</string>
+
+    <!-- Eventos Xtrack (sync) -->
+    <string name="xtrack_events_section">Eventos Xtrack</string>
+    <string name="xtrack_events_pending">%d pendente(s)</string>
+    <string name="xtrack_btn_sync_events">Sincronizar Eventos</string>
 </resources>

@@ -4,6 +4,7 @@ package com.smartx.rfidreader.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -55,6 +56,9 @@ public final class FragmentLocationInventoryBinding implements ViewBinding {
   public final LinearLayout infoBar;
 
   @NonNull
+  public final FrameLayout progressLocationInventory;
+
+  @NonNull
   public final RecyclerView recyclerViewRemainingTags;
 
   @NonNull
@@ -68,6 +72,7 @@ public final class FragmentLocationInventoryBinding implements ViewBinding {
       @NonNull MaterialButton btnSaveReading, @NonNull MaterialButton btnToggleInventory,
       @NonNull Chip chip100, @NonNull Chip chip200, @NonNull Chip chip50, @NonNull Chip chipAll,
       @NonNull ChipGroup chipGroupLimit, @NonNull LinearLayout infoBar,
+      @NonNull FrameLayout progressLocationInventory,
       @NonNull RecyclerView recyclerViewRemainingTags, @NonNull TextView textInventoryCounter,
       @NonNull TextView textLocationName) {
     this.rootView = rootView;
@@ -81,6 +86,7 @@ public final class FragmentLocationInventoryBinding implements ViewBinding {
     this.chipAll = chipAll;
     this.chipGroupLimit = chipGroupLimit;
     this.infoBar = infoBar;
+    this.progressLocationInventory = progressLocationInventory;
     this.recyclerViewRemainingTags = recyclerViewRemainingTags;
     this.textInventoryCounter = textInventoryCounter;
     this.textLocationName = textLocationName;
@@ -173,6 +179,12 @@ public final class FragmentLocationInventoryBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.progressLocationInventory;
+      FrameLayout progressLocationInventory = ViewBindings.findChildViewById(rootView, id);
+      if (progressLocationInventory == null) {
+        break missingId;
+      }
+
       id = R.id.recyclerViewRemainingTags;
       RecyclerView recyclerViewRemainingTags = ViewBindings.findChildViewById(rootView, id);
       if (recyclerViewRemainingTags == null) {
@@ -193,8 +205,8 @@ public final class FragmentLocationInventoryBinding implements ViewBinding {
 
       return new FragmentLocationInventoryBinding((ConstraintLayout) rootView, actionBar,
           btnClearTags, btnSaveReading, btnToggleInventory, chip100, chip200, chip50, chipAll,
-          chipGroupLimit, infoBar, recyclerViewRemainingTags, textInventoryCounter,
-          textLocationName);
+          chipGroupLimit, infoBar, progressLocationInventory, recyclerViewRemainingTags,
+          textInventoryCounter, textLocationName);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

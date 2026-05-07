@@ -57,6 +57,10 @@ class LocationInventoryFragment : Fragment() {
 
     private fun loadLocationsAndShowDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
+            binding.progressLocationInventory.visibility = View.VISIBLE
+            viewModel.syncBeforeLocationInventory()
+            binding.progressLocationInventory.visibility = View.GONE
+
             val locations = viewModel.getAllLocations()
             if (locations.isEmpty()) {
                 Snackbar.make(

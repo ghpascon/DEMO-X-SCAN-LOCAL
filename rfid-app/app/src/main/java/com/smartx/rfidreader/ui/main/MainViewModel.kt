@@ -35,6 +35,16 @@ data class MainUiState(
     val errorMessage: String? = null
 )
 
+data class XtrackTagInfo(
+    val idcode: String = "",
+    val description: String = ""
+)
+
+data class MoveContext(
+    val locationId: String = "",
+    val locationName: String = ""
+)
+
 data class LocationInventoryContext(
     val locationId: String = "",
     val locationName: String = "",
@@ -103,6 +113,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Resultado ao salvar inventário de local */
     private val _saveLocationInventoryResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
     val saveLocationInventoryResult: SharedFlow<Boolean> = _saveLocationInventoryResult.asSharedFlow()
+
+    /** Mapa epc → informações do objeto Xtrack (idcode + descrição) — populado em background */
+    private val _xtrackTagInfoMap = MutableStateFlow<Map<String, XtrackTagInfo>>(emptyMap())
+    val xtrackTagInfoMap: StateFlow<Map<String, XtrackTagInfo>> = _xtrackTagInfoMap.asStateFlow()
+
+    /** Contexto da tela de Movimentações */
+    private val _moveContext = MutableStateFlow(MoveContext())
+    val moveContext: StateFlow<MoveContext> = _moveContext.asStateFlow()
+
+    /** Resultado ao salvar movimentação */
+    private val _saveMoveResult = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+    val saveMoveResult: SharedFlow<Boolean> = _saveMoveResult.asSharedFlow()
 
     /** Log de conexão — lista acumulada de linhas exibida no ConnectionLogDialogFragment */
     private val _connectionLog = MutableStateFlow<List<String>>(emptyList())
@@ -309,8 +331,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     viewModelScope.launch {
                         val obj = xtrackRepo.getObjectByEpc(tag.epc.uppercase())
                         val desc = obj?.description ?: ""
+                        val idcode = obj?.idcode ?: ""
                         val current = _tagMap[tag.epc] ?: return@launch
                         _tagMap[tag.epc] = current.copy(description = desc)
+                        _xtrackTagInfoMap.update { it + (tag.epc to XtrackTagInfo(idcode = idcode, description = desc)) }
                         _tagsDirty = true
                     }
                 } else {
@@ -372,6 +396,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _tagMap.clear()
         _tagsDirty = false
         _tags.value = emptyList()
+        _xtrackTagInfoMap.value = emptyMap()
     }
 
     fun stopInventory() {
@@ -408,8 +433,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun initLocationInventory(locationId: String, locationName: String) {
         viewModelScope.launch {
             val tags = xtrackRepo.getObjectsByLocation(locationId)
-            val app = getApplication<RfidApplication>()
-            val existing = app.eventRepository.findExistingLocationInventory(locationId)
+            val existing = xtrackRepo.findExistingXtrackLocationInventory(locationId)
             val preFoundEpcs: Set<String> = if (existing != null) {
                 try {
                     val json = org.json.JSONObject(existing.tagsJson)
@@ -436,6 +460,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun getAllLocations(): List<XtrackLocationEntity> =
         xtrackRepo.getAllLocations()
 
+    /**
+     * Sincroniza locais e objetos do servidor antes de abrir o inventário de local.
+     * Retorna true se sincronizou com sucesso (ou se URL não configurada — usa dados locais).
+     */
+    suspend fun syncBeforeLocationInventory(): Boolean {
+        val url = _uiState.value.appSettings.xtrackUrl
+        if (url.isBlank()) return true // sem URL, abre com dados locais
+        return try {
+            xtrackRepo.fetchAndSaveLocations(url)
+            xtrackRepo.fetchAndSaveObjects(url)
+            true
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "syncBeforeLocationInventory error", e)
+            false
+        }
+    }
+
     fun saveLocationInventory() {
         val ctx = _locationInventoryContext.value
         if (ctx.expectedTags.isEmpty()) return
@@ -445,9 +486,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val deviceId = Settings.Secure.getString(
                     app.contentResolver, Settings.Secure.ANDROID_ID
                 ) ?: "unknown"
-                val gps = GpsHelper(app).getLocation()
-                val config = _uiState.value.config
-                val appSettings = _uiState.value.appSettings
 
                 val scannedEpcs = _tagMap.keys.map { it.uppercase() }.toSet()
                 // Combina EPCs da sessão atual com os já encontrados anteriormente
@@ -455,30 +493,64 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val foundEpcs = ctx.expectedTags.filter { it.epc.uppercase() in allFoundEpcs }.map { it.epc }
                 val missingEpcs = ctx.expectedTags.filter { it.epc.uppercase() !in allFoundEpcs }.map { it.epc }
 
-                // Verifica novamente se existe evento pendente (pode ter sido criado em outra sessão)
+                // Verifica se já existe evento pendente para retomada
                 val existingEventId = ctx.existingEventId
-                    ?: app.eventRepository.findExistingLocationInventory(ctx.locationId)?.id
+                    ?: xtrackRepo.findExistingXtrackLocationInventory(ctx.locationId)?.id
 
-                app.eventRepository.saveLocationInventory(
+                // Salva na tabela de eventos Xtrack (não na tabela de eventos normais)
+                xtrackRepo.saveXtrackLocationInventory(
                     deviceId = deviceId,
                     locationId = ctx.locationId,
                     locationName = ctx.locationName,
                     total = ctx.expectedTags.size,
                     foundEpcs = foundEpcs,
                     missingEpcs = missingEpcs,
-                    gpsLat = gps?.first ?: 0.0,
-                    gpsLng = gps?.second ?: 0.0,
-                    hasGps = gps != null,
-                    txPower = config.txPower,
-                    session = config.session,
-                    rssiFilter = config.rssiFilter,
-                    prefixes = appSettings.prefixes,
                     existingEventId = existingEventId
                 )
                 _saveLocationInventoryResult.emit(true)
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao salvar inventário de local", e)
                 _saveLocationInventoryResult.emit(false)
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Movimentações (change_location)
+    // -------------------------------------------------------------------------
+
+    fun initMoveLocation(locationId: String, locationName: String) {
+        _moveContext.value = MoveContext(locationId = locationId, locationName = locationName)
+    }
+
+    fun clearMoveContext() {
+        _moveContext.value = MoveContext()
+    }
+
+    fun saveMoveLocation() {
+        val ctx = _moveContext.value
+        if (ctx.locationId.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val app = getApplication<RfidApplication>()
+                val deviceId = Settings.Secure.getString(
+                    app.contentResolver, Settings.Secure.ANDROID_ID
+                ) ?: "unknown"
+                val tagInfoMap = _xtrackTagInfoMap.value
+                val tags = _tagMap.values.map { tag ->
+                    val info = tagInfoMap[tag.epc] ?: XtrackTagInfo()
+                    Triple(tag.epc, info.idcode, info.description)
+                }
+                xtrackRepo.saveChangeLocation(
+                    deviceId = deviceId,
+                    locationId = ctx.locationId,
+                    locationName = ctx.locationName,
+                    tags = tags
+                )
+                _saveMoveResult.emit(true)
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro ao salvar movimentação", e)
+                _saveMoveResult.emit(false)
             }
         }
     }
